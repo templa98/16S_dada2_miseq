@@ -2,7 +2,7 @@
 
 # Check if exactly one argument (the JSON file) is provided
 if [ $# -ne 1 ]; then
-  echo "Error: \n The experiment's JSON configuration file is missing \n Usage: ./bubu.sh experiment001.json \n"
+  printf "Error: \nThe experiment's JSON configuration file is missing \nUsage: ./bubu.sh experiment001.json\n"
   exit 1
 fi
 
