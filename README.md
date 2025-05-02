@@ -1,6 +1,6 @@
-# Bubu
+# DADA2 Workflow Runner for CC
 
-Bubu is a dada2 based 16S RNA metagenomic pipeline for Illumina sequencing platforms with built-in quality control metrics.
+This repository is a dada2 based 16S RNA metagenomic pipeline for Illumina sequencing platforms with built-in quality control metrics.
 
 ## WARNING!
 
