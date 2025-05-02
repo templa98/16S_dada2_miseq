@@ -132,8 +132,8 @@ EOF
 
 module load StdEnv/2023
 module load gcc/12.3
-module load r-bundle-bioconductor/3.18
-module load r/4.3.1
+module load r-bundle-bioconductor/3.20
+module load r/4.4.0
 
 Rscript dada2_workflow.R
 EOF
