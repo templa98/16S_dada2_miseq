@@ -119,23 +119,23 @@ else
 #SBATCH --time=${TOTAL_TIME}:00
 #SBATCH --nodes=1
 #SBATCH --mem=${RAM_SIZE}G
-#SBATCH --cpus-per-task=$NUM_CPUS
+#SBATCH --cpus-per-task=${NUM_CPUS}
 EOF
     echo "#SBATCH --output=${OUTPUT_DIR}/%j-slurm-output.txt"
     echo "#SBATCH --error=${OUTPUT_DIR}/%j-slurm-error.txt"
-    if [[ -n "$EMAIL" ]]; then
+    if [[ -n "${EMAIL}" ]]; then
       echo "#SBATCH --mail-type=ALL"
-      echo "#SBATCH --mail-user=$EMAIL"
+      echo "#SBATCH --mail-user=${EMAIL}"
     fi
 
-    cat <<'EOF'
+cat <<'EOF'
 
 module load StdEnv/2023
 module load gcc/12.3
 module load r-bundle-bioconductor/3.20
 module load r/4.4.0
 
-Rscript dada2_workflow.R
+Rscript dada2_workflow.R "$CONFIG_FILE"
 EOF
   ) | sbatch
 

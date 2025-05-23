@@ -1,6 +1,7 @@
 d2w_configs <- new.env()
 
-d2w_configs$default_experiment_path <- "./experiments.json"
+args <- commandArgs(trailingOnly = TRUE)
+d2w_configs$default_experiment_path <- args[1]
 
 
 # read and parse the json file
@@ -15,10 +16,6 @@ d2w_configs$load_experiments <- function() {
     return(parsed_data)
 }
 
-# validate the configurations of the experiments
-d2w_configs$validate_configurations <- function(experiments) {
-    # TODO: implement the function
-}
 
 
 
