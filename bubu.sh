@@ -112,32 +112,40 @@ else
   echo ""
   echo "Submitting job to SLURM..."
 
-  (
-    cat <<EOF
+
+CONFIG_PATH="$(realpath "$CONFIG_FILE")"
+
+(
+  cat <<EOF
 #!/bin/bash
 
 #SBATCH --time=${TOTAL_TIME}:00
 #SBATCH --nodes=1
 #SBATCH --mem=${RAM_SIZE}G
 #SBATCH --cpus-per-task=${NUM_CPUS}
+#SBATCH --output=${OUTPUT_DIR}/%j-slurm-output.txt
+#SBATCH --error=${OUTPUT_DIR}/%j-slurm-error.txt
 EOF
-    echo "#SBATCH --output=${OUTPUT_DIR}/%j-slurm-output.txt"
-    echo "#SBATCH --error=${OUTPUT_DIR}/%j-slurm-error.txt"
-    if [[ -n "${EMAIL}" ]]; then
-      echo "#SBATCH --mail-type=ALL"
-      echo "#SBATCH --mail-user=${EMAIL}"
-    fi
 
-cat <<'EOF'
+if [[ -n "${EMAIL}" ]]; then
+  echo "#SBATCH --mail-type=ALL"
+  echo "#SBATCH --mail-user=${EMAIL}"
+fi
+
+cat <<EOF
 
 module load StdEnv/2023
 module load gcc/12.3
 module load r-bundle-bioconductor/3.20
 module load r/4.4.0
 
-Rscript dada2_workflow.R "$CONFIG_FILE"
+echo "Running with config: ${CONFIG_PATH}"
+Rscript dada2_workflow.R "${CONFIG_PATH}"
 EOF
-  ) | sbatch
+
+) | sbatch
+
+
 
   echo "Job submitted successfully."
 fi
