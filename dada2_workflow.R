@@ -224,7 +224,7 @@ for (experiment in experiment_configs) {
     # export ASVs to a .fasta file
     if(experiment$dada$asv_inference$generate_fasta_file){
         asvs = colnames(seq_tab_no_chimera  %>% as.data.frame())
-        fasta  <- paste0(">", asv, "____", batch_id, "\n", asv)
+        fasta  <- paste0(">", asvs, "\n", asvs)
         writeToFile(fasta, "asv", ".fasta")
         d2w_logger$logi("generated .fasta file from ASVs")
     }
