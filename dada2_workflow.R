@@ -82,7 +82,7 @@ for (experiment in experiment_configs) {
     if (experiment$settings$pipeline$quality_control) {
         d2w_logger$logs("Quality Control")
         d2w_dada$generate_quality_profile_plots(experiment)
-        d2w_dada$run_multiqc(experiment)
+        # d2w_dada$run_multiqc(experiment)
     } else {
         d2w_logger$logs("Skipping Quality Control Step")
     }
@@ -115,11 +115,11 @@ for (experiment in experiment_configs) {
 
     # Filter and trim reads
     out_filter_and_trim <- filterAndTrim(experiment$runtime$samples$forward, filtFs, experiment$runtime$samples$reverse, filtRs,
-        truncLen = c(experiment$filter_and_trim$truncate$forward, experiment$filter_and_trim$truncate$reverse),
-        trimLeft = c(experiment$filter_and_trim$trim_lef$forward, experiment$filter_and_trim$trim_lef$reverse),
+        truncLen = c(experiment$dada$filter_and_trim$truncate$forward, experiment$dada$filter_and_trim$truncate$reverse),
+        trimLeft = c(experiment$dada$filter_and_trim$trim_lef$forward, experiment$dada$filter_and_trim$trim_lef$reverse),
         maxN = 0, maxEE = c(2, 2), truncQ = 2, # TODO: investigate maxEE and truncQ
-        rm.phix = experiment$filter_and_trim$remove_phix_genome,
-        minLen = experiment$filter_and_trim$min_read_length, compress = TRUE, multithread = experiment$settings$multi_thread,
+        rm.phix = experiment$dada$filter_and_trim$remove_phix_genome,
+        minLen = experiment$dada$filter_and_trim$min_read_length, compress = TRUE, multithread = experiment$settings$multi_thread,
         verbose = experiment$settings$verbose_output
     )
 
@@ -163,9 +163,9 @@ for (experiment in experiment_configs) {
     # -------------------- Error Estimation
     d2w_logger$logs("Learning Errors")
 
-    errFs <- learnErrors(derepFs, multithread = experiment$settings$multi_thread, randomize = experiment$asv_inference$error_model$randomize, MAX_CONSIST = experiment$asv_inference$error_model$iterations)
+    errFs <- learnErrors(derepFs, multithread = experiment$settings$multi_thread, randomize = experiment$dada$asv_inference$error_model$randomize, MAX_CONSIST = experiment$dada$asv_inference$error_model$iterations)
     saveObj(errFs, "errFs")
-    errRs <- learnErrors(derepRs, multithread = experiment$settings$multi_thread, randomize = experiment$asv_inference$error_model$randomize, MAX_CONSIST = experiment$asv_inference$error_model$iterations)
+    errRs <- learnErrors(derepRs, multithread = experiment$settings$multi_thread, randomize = experiment$dada$asv_inference$error_model$randomize, MAX_CONSIST = experiment$dada$asv_inference$error_model$iterations)
     saveObj(errRs, "errRs")
 
     p <- plotErrors(errFs, nominalQ = TRUE) + ggtitle(paste0("Forward reads errors in ", experiment$settings$fancy_name))
@@ -178,10 +178,10 @@ for (experiment in experiment_configs) {
     d2w_logger$logs("DADA 2")
 
     # Apply DADA2 Algorithm
-    dadaFs <- dada(derepFs, err = errFs, multithread = experiment$settings$multi_thread, pool = experiment$asv_inference$dada_pool_samples)
+    dadaFs <- dada(derepFs, err = errFs, multithread = experiment$settings$multi_thread, pool = experiment$dada$asv_inference$dada_pool_samples)
     d2w_logger$logi("Finished DADA2 for derepFs")
 
-    dadaRs <- dada(derepRs, err = errRs, multithread = experiment$settings$multi_thread, pool = experiment$asv_inference$dada_pool_samples)
+    dadaRs <- dada(derepRs, err = errRs, multithread = experiment$settings$multi_thread, pool = experiment$dada$asv_inference$dada_pool_samples)
     d2w_logger$logi("Finished DADA2 for derepRs")
 
     # -------------------- Merging paired-end results
@@ -222,9 +222,13 @@ for (experiment in experiment_configs) {
     saveObj(seq_tab_no_chimera, "seq_tab_no_chimera")
 
     # export ASVs to a .fasta file
-    asv_dict <- d2w_dada$generate_asv_dict(seq_tab_no_chimera) # keep a mapping between ASV keys and their sequences (e.g. ASV254 -> ACTGGCTA...)
-    asv_fasta <- d2w_dada$export_to_fasta(asv_dict)
-    writeToFile(asv_fasta, "asv_no_chimera", ".fasta")
+    if(experiment$dada$asv_inference$generate_fasta_file){
+        asvs = colnames(seq_tab_no_chimera  %>% as.data.frame())
+        fasta  <- paste0(">", asv, "____", batch_id, "\n", asv)
+        writeToFile(fasta, "asv", ".fasta")
+        d2w_logger$logi("generated .fasta file from ASVs")
+    }
+
 
     # -------------------- Generating tracking matrix
     d2w_logger$logs("Generating tracking matrix")
@@ -270,7 +274,7 @@ for (experiment in experiment_configs) {
     # -------------------- Assign Taxonomy
     d2w_logger$logs("Assigning Taxonomy to ASVs")
 
-    for (fastaConfig in experiment$taxonomy_assignment) {
+    for (fastaConfig in experiment$dada$taxonomy_assignment) {
         fasta_train_file <- fastaConfig$reference_name
         if (fastaConfig$active == FALSE) {
             # skip this fasta file
@@ -314,6 +318,8 @@ for (experiment in experiment_configs) {
         )
         saveObj(ps, paste0("ps_", tolower(fasta_train_file)))
     }
+
+
 
 
     # close the experiment and write out the final results
