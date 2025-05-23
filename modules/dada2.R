@@ -1,11 +1,8 @@
 d2w_dada <- new.env()
 
 
-d2w_dada$normalize_pids <- function(pid_list, sub_underscore = TRUE, sub_space = TRUE, sub_dash = TRUE) {
-    # Remove the underscores, spaces, and dashes
-    if (sub_underscore) {
-        pid_list <- gsub("_", "", pid_list)
-    }
+d2w_dada$normalize_pids <- function(pid_list, sub_space = TRUE, sub_dash = TRUE) {
+    # Remove the spaces, and dashes
     if (sub_space) {
         pid_list <- gsub(" ", "", pid_list)
     }
@@ -35,14 +32,20 @@ d2w_dada$generate_quality_profile_plots <- function(experiment) {
     }
     ii <- sample(length(experiment$runtime$samples$forward), min(experiment$runtime$samples$num_samples, 6))
     qualityProf.fnFs <- plotQualityProfile(experiment$runtime$samples$forward[ii]) +
-        ggtitle(paste0("Quality Scores of Forward Reads in ", experiment$settings$name)) +
-        scale_x_continuous(breaks = seq(0, 350, 25)) +
-        geom_vline(xintercept = experiment$filter_and_trim$truncate$forward, linetype = "solid", color = "blue", linewidth = 0.6)
+        ggtitle(paste0("Quality Scores of Forward Reads in ", experiment$settings$name)) 
 
     qualityProf.fnRs <- plotQualityProfile(experiment$runtime$samples$reverse[ii]) +
-        ggtitle(paste0("Quality Scores of Reverse Reads in ", experiment$settings$name)) +
-        scale_x_continuous(breaks = seq(0, 350, 25)) +
-        geom_vline(xintercept = experiment$filter_and_trim$truncate$reverse, linetype = "solid", color = "blue", linewidth = 0.6)
+        ggtitle(paste0("Quality Scores of Reverse Reads in ", experiment$settings$name)) 
+
+    if(experiment$settings$pipeline$dada){
+        qualityProf.fnFs <- qualityProf.fnFs +
+            scale_x_continuous(breaks = seq(0, 350, 25)) +
+            geom_vline(xintercept = experiment$dada$filter_and_trim$truncate$forward, linetype = "solid", color = "blue", linewidth = 0.6)
+
+        qualityProf.fnRs <- qualityProf.fnRs +
+            scale_x_continuous(breaks = seq(0, 350, 25)) +
+            geom_vline(xintercept = experiment$dada$filter_and_trim$truncate$reverse, linetype = "solid", color = "blue", linewidth = 0.6)
+    }
 
 
     qpFS <- paste0(experiment$runtime$directory, "quality_control/", "quality_profile_forward_reads", "_", experiment$settings$name, ".pdf")
