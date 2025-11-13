@@ -44,6 +44,9 @@ for (experiment in experiment_configs) {
     d2w_logger$logs("Importing Data")
     experiment <- d2w_dada$import_fastq_files(experiment)
 
+    # Validate input samples for zero reads BEFORE any processing
+    experiment <- d2w_dada$validate_input_samples(experiment)
+
     # check if the experiment requires normalizing the PIDs
     if (experiment$input_data$normalize_pids) {
         d2w_logger$info("Normalizing PIDs")
@@ -123,6 +126,25 @@ for (experiment in experiment_configs) {
         verbose = experiment$settings$verbose_output
     )
 
+    # Validate filtered samples and get valid indices
+    validation_result <- d2w_dada$validate_filtered_samples(experiment, filtFs, filtRs)
+    valid_indices <- validation_result$valid_indices
+    
+    # Update all sample-related lists to stay in sync
+    experiment$runtime$samples$forward <- experiment$runtime$samples$forward[valid_indices]
+    experiment$runtime$samples$reverse <- experiment$runtime$samples$reverse[valid_indices]
+    experiment$runtime$samples$names <- experiment$runtime$samples$names[valid_indices]
+    experiment$runtime$samples$num_samples <- length(valid_indices)
+    
+    # Update filtered file lists
+    filtFs <- validation_result$filtFs
+    filtRs <- validation_result$filtRs
+    names(filtFs) <- experiment$runtime$samples$names
+    names(filtRs) <- experiment$runtime$samples$names
+    
+    # Update filter_and_trim output to match valid samples only
+    out_filter_and_trim <- out_filter_and_trim[valid_indices, , drop = FALSE]
+
     df.filter.trim <- out_filter_and_trim %>% as.data.frame()
     rownames(df.filter.trim) <- rownames(out_filter_and_trim)
     df.filter.trim <- df.filter.trim %>% mutate(sample_id = sapply(strsplit(basename(experiment$runtime$samples$forward), "_S"), `[`, 1))
@@ -145,19 +167,24 @@ for (experiment in experiment_configs) {
     # -------------------- Dereplication
     d2w_logger$logs("Dereplicating Reads")
 
-    # Check for the existence of filtered sequence files
-    exists <- file.exists(filtFs) # Check for forward reads
+    # All files should exist after validation, but verify anyway
+    exists_fwd <- file.exists(filtFs)
+    exists_rev <- file.exists(filtRs)
+    
+    if (!all(exists_fwd) || !all(exists_rev)) {
+        d2w_logger$error("Some filtered files are missing after validation. This should not happen.")
+        d2w_logger$error(paste0("Missing forward: ", sum(!exists_fwd), ", Missing reverse: ", sum(!exists_rev)))
+        stop("Missing filtered files after validation")
+    }
 
-    # Perform dereplication on existing files
-    # Dereplicate forward reads
-    derepFs <- derepFastq(filtFs[exists], verbose = experiment$settings$verbose_output)
-    names(derepFs) <- experiment$runtime$samples$names[exists]
+    # Dereplicate forward and reverse reads
+    d2w_logger$info("Dereplicating forward reads")
+    derepFs <- derepFastq(filtFs, verbose = experiment$settings$verbose_output)
+    names(derepFs) <- experiment$runtime$samples$names
 
-    # Check for the existence of filtered sequence files
-    exists <- file.exists(filtRs) # Check for reverse reads
-    # Dereplicate reverse reads
-    derepRs <- derepFastq(filtRs[exists], verbose = experiment$settings$verbose_output)
-    names(derepRs) <- experiment$runtime$samples$names[exists]
+    d2w_logger$info("Dereplicating reverse reads")
+    derepRs <- derepFastq(filtRs, verbose = experiment$settings$verbose_output)
+    names(derepRs) <- experiment$runtime$samples$names
 
 
     # -------------------- Error Estimation
