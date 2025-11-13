@@ -140,7 +140,7 @@ module load r-bundle-bioconductor/3.20
 module load r/4.4.0
 
 echo "Running with config: ${CONFIG_PATH}"
-Rscript dada2_workflow.R "${CONFIG_PATH}"
+Rscript dada2_workflow.R "${CONFIG_PATH}" "${OUTPUT_DIR}"
 EOF
 
 ) | sbatch
