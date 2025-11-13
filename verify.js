@@ -196,6 +196,14 @@ function validateConfig(config) {
         errors.push('"input_data.sample_frequency" must be between 0.0 and 1.0 inclusive.');
       }
     }
+
+    if ('input_miseq_directory' in inputData && 'output_filtered_fastq_directory' in inputData) {
+      const inputDir = inputData.input_miseq_directory.replace(/\/+$/, '');
+      const outputDir = inputData.output_filtered_fastq_directory.replace(/\/+$/, '');
+      if (inputDir === outputDir) {
+        errors.push('"input_data.input_miseq_directory" and "input_data.output_filtered_fastq_directory" must be different.');
+      }
+    }
   }
 
   // Validate "quality_control" section
