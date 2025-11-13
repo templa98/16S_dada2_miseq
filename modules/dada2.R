@@ -16,15 +16,15 @@ d2w_dada$generate_quality_profile_plots <- function(experiment) {
     # Check if the experiment quality control section has the quality profile step
     if (is.null(experiment$quality_control$quality_profile_plot)) {
         # if the quality profile step is missing, return and do nothing
-        d2w_logger$logi("Skipping quality profile plot generation")
+        d2w_logger$info("Skipping quality profile plot generation")
         return()
     }
 
     if (!experiment$quality_control$quality_profile_plot) {
-        d2w_logger$logi("Skipping quality profile plot generation")
+        d2w_logger$info("Skipping quality profile plot generation")
         return()
     }
-    d2w_logger$logi("Generating quality profile plots")
+    d2w_logger$info("Generating quality profile plots")
 
     # Visualize quality profiles of random samples
     if (experiment$settings$random_seed > 0) {
@@ -60,7 +60,7 @@ d2w_dada$run_multiqc <- function(experiment) {
     # Check if the experiment quality control section has the multiqc step
     if (is.null(experiment$quality_control$multiqc)) {
         # if the multiqc step is missing, return and do nothing
-        d2w_logger$logi("Skipping MultiQC report generation")
+        d2w_logger$info("Skipping MultiQC report generation")
         return()
     }
 
@@ -83,7 +83,7 @@ d2w_dada$run_multiqc <- function(experiment) {
         command <- paste(fastqc_path, "-o", output_dir, fastq_file, ">/dev/null 2>&1")
         result <- system(command, intern = TRUE, ignore.stderr = FALSE, ignore.stdout = TRUE)
         message <- paste0("Finished FastQC for ", fastq_file)
-        d2w_logger$logv(message, verbose = experiment$settings$verbose)
+        d2w_logger$verbose(message, verbose = experiment$settings$verbose)
         return(message)
     }
 
@@ -96,13 +96,13 @@ d2w_dada$run_multiqc <- function(experiment) {
         intermediate_reports_mqc <- ifelse(no_intermediate_reports, "--no-data-dir", "")
 
         command <- paste(multiqc_path, input_dir, "-o", output_dir, "--filename", file_name, interactive_mqc, intermediate_reports_mqc, ">/dev/null 2>&1")
-        d2w_logger$logi(paste0("Running MultiQC on ", fastqc_dir))
+        d2w_logger$info(paste0("Running MultiQC on ", fastqc_dir))
         result <- system(command, intern = TRUE, ignore.stderr = FALSE, ignore.stdout = TRUE)
     }
 
     # Run FastQC on the forward and reverse reads separately
     if (experiment$quality_control$multiqc$separate_direction_reports) {
-        d2w_logger$logi("Running FastQC on the forward and reverse reads separately")
+        d2w_logger$info("Running FastQC on the forward and reverse reads separately")
         output_dir_fw <- paste0(experiment$runtime$directory, "quality_control/multiqc/intermediate/fasqc/forward/")
         output_dir_re <- paste0(experiment$runtime$directory, "quality_control/multiqc/intermediate/fasqc/reverse/")
         d2w_io$mkdirs(output_dir_fw)
@@ -114,20 +114,20 @@ d2w_dada$run_multiqc <- function(experiment) {
         pids <- 1:num_jobs
         num_cpus <- ifelse(experiment$settings$multi_thread, parallel::detectCores(), 1)
         results <- mclapply(pids, function(i) execute_fastqc(pids[i], fastq_files[i], output_dir_fw), mc.cores = num_cpus)
-        d2w_logger$logi("Finished FastQC on the forward reads")
+        d2w_logger$info("Finished FastQC on the forward reads")
 
         fastq_files <- c(experiment$runtime$samples$reverse)
         num_jobs <- length(fastq_files)
         pids <- 1:num_jobs
         num_cpus <- ifelse(experiment$settings$multi_thread, parallel::detectCores(), 1)
         results <- mclapply(pids, function(i) execute_fastqc(pids[i], fastq_files[i], output_dir_re), mc.cores = num_cpus)
-        d2w_logger$logi("Finished FastQC on the reverse reads")
+        d2w_logger$info("Finished FastQC on the reverse reads")
 
         # Run MultiQC on the forward and reverse reads separately
         execute_multiqc(output_dir_fw, "multiqc_forward_reads")
         execute_multiqc(output_dir_re, "multiqc_reverse_reads")
     } else { # Run FastQC on the combined forward and reverse reads
-        d2w_logger$logi("Running FastQC on the forward and reverse reads in combined mode")
+        d2w_logger$info("Running FastQC on the forward and reverse reads in combined mode")
         output_dir <- paste0(experiment$runtime$directory, "quality_control/multiqc/intermediate/fasqc/")
         d2w_io$mkdirs(output_dir)
 
@@ -142,7 +142,7 @@ d2w_dada$run_multiqc <- function(experiment) {
 
     if (no_intermediate_reports == TRUE) {
         # delete the intermediate reports directory
-        d2w_logger$logi("Deleting the intermediate reports directory")
+        d2w_logger$info("Deleting the intermediate reports directory")
         unlink(paste0(experiment$runtime$directory, "quality_control/multiqc/intermediate"), recursive = TRUE)
     }
 }
@@ -161,7 +161,7 @@ d2w_dada$import_fastq_files <- function(experiment) {
 
     # Extract sample names, assuming filenames have format: SAMPLENAME_SXXX.fastq
     sample.names <- sapply(strsplit(basename(fnFs), "_S"), `[`, 1)
-    d2w_logger$logv("Raw sample names:\n", paste0(sample.names, collapse = ", "), "\n", verbose = experiment$settings$verbose_output)
+    d2w_logger$verbose("Raw sample names:\n", paste0(sample.names, collapse = ", "), "\n", verbose = experiment$settings$verbose_output)
 
 
     experiment$runtime$samples$forward <- fnFs
