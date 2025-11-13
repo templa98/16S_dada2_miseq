@@ -92,7 +92,9 @@ d2w_configs$copy_slurm_logs <- function(experiment) {
     flush.console()
     
     # Small delay to allow file system sync (optional, helps with networked file systems)
-    Sys.sleep(10)
+    Sys.sleep(30)
+    
+    flush.console()
 
     # Copy logs if they exist
     logs_copied <- FALSE
