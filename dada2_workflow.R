@@ -46,34 +46,34 @@ for (experiment in experiment_configs) {
 
     # check if the experiment requires normalizing the PIDs
     if (experiment$input_data$normalize_pids) {
-        d2w_logger$logi("Normalizing PIDs")
+        d2w_logger$info("Normalizing PIDs")
         experiment$runtime$samples$names <- d2w_dada$normalize_pids(experiment$runtime$samples$names)
-        d2w_logger$logv("Normalized sample names:\n", paste0(experiment$runtime$samples$names, collapse = ", "), "\n", verbose = experiment$settings$verbose_output)
+        d2w_logger$verbose("Normalized sample names:\n", paste0(experiment$runtime$samples$names, collapse = ", "), "\n", verbose = experiment$settings$verbose_output)
     }
 
     # check if the custom PID list is not empty
     if (d2w_dada$has_custom_pids(experiment)) {
-        d2w_logger$logi("Selecting custom samples (PIDs) from the list of all samples")
+        d2w_logger$info("Selecting custom samples (PIDs) from the list of all samples")
         experiment <- d2w_dada$read_custom_pid_samples(experiment)
         count <- paste0("(Number of PIDs read = ", length(experiment$runtime$samples$names), " )")
-        d2w_logger$logv("Custom sample names ", count, ": \n", paste0(experiment$runtime$samples$names, collapse = ", "), "\n", verbose = experiment$settings$verbose_output)
+        d2w_logger$verbose("Custom sample names ", count, ": \n", paste0(experiment$runtime$samples$names, collapse = ", "), "\n", verbose = experiment$settings$verbose_output)
     }
 
 
     if (experiment$input_data$sample_input) {
-        d2w_logger$logi("Sampling input FastQ files with a sample frequency of ", experiment$input_data$sample_frequency)
+        d2w_logger$info("Sampling input FastQ files with a sample frequency of ", experiment$input_data$sample_frequency)
         experiment <- d2w_dada$sub_sample_input_files(experiment)
-        d2w_logger$logi("Number of sampled PIDs: ", experiment$runtime$samples$num_samples)
+        d2w_logger$info("Number of sampled PIDs: ", experiment$runtime$samples$num_samples)
         d2w_logger$print("Sampled PID names:\n", paste0(experiment$runtime$samples$names, collapse = ", "), "\n")
     }
 
     if (experiment$settings$verbose_output) {
         count <- paste0("(Number of Samples = ", length(experiment$runtime$samples$forward), " )")
-        d2w_logger$logv("Forward Reads Files ", count, ":\n", verbose = experiment$settings$verbose_output)
+        d2w_logger$verbose("Forward Reads Files ", count, ":\n", verbose = experiment$settings$verbose_output)
         d2w_logger$print(paste0(experiment$runtime$samples$forward, collapse = "\n"))
 
         count <- paste0("(Number of Samples = ", length(experiment$runtime$samples$reverse), " )")
-        d2w_logger$logv("\n\nReverse Reads Files ", count, ":\n", verbose = experiment$settings$verbose_output)
+        d2w_logger$verbose("\n\nReverse Reads Files ", count, ":\n", verbose = experiment$settings$verbose_output)
         d2w_logger$print(paste0(experiment$runtime$samples$reverse, collapse = "\n"))
     }
 
@@ -108,7 +108,7 @@ for (experiment in experiment_configs) {
     names(filtRs) <- experiment$runtime$samples$names
 
     # running some assertion before commiting to DADA2 pipeline
-    d2w_logger$logi("Running sanity check assertions on input data")
+    d2w_logger$info("Running sanity check assertions on input data")
     assertthat::are_equal(length(filtFs), length(filtRs))
     assertthat::are_equal(length(experiment$runtime$samples$forward), length(filtFs))
     assertthat::are_equal(length(experiment$runtime$samples$reverse), length(filtRs))
@@ -179,16 +179,16 @@ for (experiment in experiment_configs) {
 
     # Apply DADA2 Algorithm
     dadaFs <- dada(derepFs, err = errFs, multithread = experiment$settings$multi_thread, pool = experiment$dada$asv_inference$dada_pool_samples)
-    d2w_logger$logi("Finished DADA2 for derepFs")
+    d2w_logger$info("Finished DADA2 for derepFs")
 
     dadaRs <- dada(derepRs, err = errRs, multithread = experiment$settings$multi_thread, pool = experiment$dada$asv_inference$dada_pool_samples)
-    d2w_logger$logi("Finished DADA2 for derepRs")
+    d2w_logger$info("Finished DADA2 for derepRs")
 
     # -------------------- Merging paired-end results
     d2w_logger$logs("Merging paired-end results")
     # Merge Paired-End Reads
     mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose = experiment$settings$verbose_output)
-    d2w_logger$logi("Finished merging paired-end reads")
+    d2w_logger$info("Finished merging paired-end reads")
     saveObj(mergers, "mergers")
 
     # free memory
@@ -198,7 +198,7 @@ for (experiment in experiment_configs) {
     rm(errFs)
     rm(errRs)
 
-    d2w_logger$logv("Calling Garbage Collector to free memory", verbose = experiment$settings$verbose_output)
+    d2w_logger$verbose("Calling Garbage Collector to free memory", verbose = experiment$settings$verbose_output)
     gc(verbose = experiment$settings$verbose_output)
 
     # -------------------- Remove Chimeras
@@ -226,7 +226,7 @@ for (experiment in experiment_configs) {
         asvs = colnames(seq_tab_no_chimera  %>% as.data.frame())
         fasta  <- paste0(">", asvs, "\n", asvs)
         writeToFile(fasta, "asv", ".fasta")
-        d2w_logger$logi("generated .fasta file from ASVs")
+        d2w_logger$info("generated .fasta file from ASVs")
     }
 
 
@@ -281,19 +281,19 @@ for (experiment in experiment_configs) {
             d2w_logger$print("skipping fasta file: ", fastaConfig$reference_name)
             next
         }
-        d2w_logger$logi("Assigning Taxonomy (Kingdom:Genus) to ASVs using ", fasta_train_file)
+        d2w_logger$info("Assigning Taxonomy (Kingdom:Genus) to ASVs using ", fasta_train_file)
         taxonomy_table <- assignTaxonomy(seq_tab_no_chimera, refFasta = fastaConfig$train_set_path, tryRC = fastaConfig$reverse_match_taxa, multithread = experiment$settings$multi_thread)
         saveObj(taxonomy_table, paste0("taxonomy_table_", tolower(fasta_train_file)))
 
 
         # check if the experiment requires assigning species to the ASVs
         if (fastaConfig$assign_species) {
-            d2w_logger$logi(paste0("Assigning species to ASVs using ", fasta_train_file))
+            d2w_logger$info(paste0("Assigning species to ASVs using ", fasta_train_file))
             taxonomy_table <- addSpecies(taxonomy_table, refFasta = fastaConfig$species_train_set_path, tryRC = fastaConfig$reverse_match_taxa, allowMultiple = fastaConfig$allow_multiple_species, verbose = experiment$settings$verbose_output)
             saveObj(taxonomy_table, paste0("taxonomy_table_species_", tolower(fasta_train_file)))
         }
 
-        d2w_logger$logi("Generating ASV Statistics for ", fasta_train_file)
+        d2w_logger$info("Generating ASV Statistics for ", fasta_train_file)
         asv_stat_cols <- c("ASV", colnames(taxonomy_table))
         otu.stat <- as.data.frame(taxonomy_table)
         otu.stat[, "ASV"] <- rownames(otu.stat)
@@ -307,7 +307,7 @@ for (experiment in experiment_configs) {
         rownames(otu.stat.na) <- c("NA count (ASVs)", "NA % (ASVs)")
         write.csv(otu.stat.na, paste0(experiment$runtime$directory, "output/asv_stat_", tolower(fasta_train_file), "_", experiment$settings$name, ".csv"))
 
-        d2w_logger$logi("Generating Phyloseq Object for ", fasta_train_file)
+        d2w_logger$info("Generating Phyloseq Object for ", fasta_train_file)
         PID <- experiment$runtime$samples$names
         sample.data <- as.data.frame(PID)
         rownames(sample.data) <- PID
@@ -333,7 +333,7 @@ for (experiment in experiment_configs) {
     rm(seq_table_from_mergers)
     rm(seq_tab_no_chimera)
     rm(taxonomy_table)
-    d2w_logger$logv("Calling Garbage Collector to free memory", verbose = experiment$settings$verbose_output)
+    d2w_logger$verbose("Calling Garbage Collector to free memory", verbose = experiment$settings$verbose_output)
     gc(verbose = experiment$settings$verbose_output)
 }
 
