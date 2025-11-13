@@ -276,6 +276,7 @@ for (experiment in experiment_configs) {
         geom_boxplot() +
         labs(title = paste0("Number of reads after each stage in ", experiment$settings$fancy_name), x = "Stage", y = "Number of Reads") +
         theme_minimal() +
+        theme(legend.position = "none") +
         scale_y_continuous(labels = scales::comma)
     ggsave(plotName("track_reads_boxplot"), track.plot, width = 16, height = 6, units = "in")
 
@@ -287,7 +288,8 @@ for (experiment in experiment_configs) {
         labs(color = "Sample PIDs", x = " Stage", y = "Number of Reads (log10)", title = paste0("Number of reads after each stage in ", experiment$settings$fancy_name)) +
         geom_line() +
         scale_y_log10(label = scales::comma) +
-        theme_minimal()
+        theme_minimal() +
+        theme(legend.position = "none")
     ggsave(plotName("track_reads_log10"), track.plot, width = 16, height = 6, units = "in")
 
 
@@ -295,7 +297,8 @@ for (experiment in experiment_configs) {
         labs(color = "Sample PIDs", x = " Stage", y = "Number of Reads", title = paste0("Number of reads after each stage in ", experiment$settings$fancy_name)) +
         geom_line() +
         scale_y_continuous(label = scales::comma) +
-        theme_minimal()
+        theme_minimal() +
+        theme(legend.position = "none")
     ggsave(plotName("track_reads"), track.plot, width = 16, height = 6, units = "in")
 
     # -------------------- Assign Taxonomy
